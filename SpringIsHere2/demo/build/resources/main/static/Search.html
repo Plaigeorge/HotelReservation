@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Rooms</title>
+    <script>
+        function searchRooms() {
+            const roomType = document.getElementById("roomType").value;
+            const minPrice = document.getElementById("minPrice").value;
+            const maxPrice = document.getElementById("maxPrice").value;
+            const maxDistance = document.getElementById("maxDistance").value;
+            const latitude = document.getElementById("latitude").value;
+            const longitude = document.getElementById("longitude").value;
+
+            fetch(`/hotels/search?roomType=${roomType}&minPrice=${minPrice}&maxPrice=${maxPrice}&maxDistance=${maxDistance}&latitude=${latitude}&longitude=${longitude}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayResults(data);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function displayResults(rooms) {
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = ""; // Clear previous results
+
+            if (rooms.length === 0) {
+                resultsDiv.innerHTML = "<p>No rooms found.</p>";
+                return;
+            }
+
+            rooms.forEach(room => {
+                const roomDiv = document.createElement("div");
+                roomDiv.innerHTML = `
+                    <p>Hotel: ${room.hotelName}</p>
+                    <p>Room Number: ${room.roomNumber}</p>
+                    <p>Price: ${room.price}</p>
+                    <p>Distance: ${room.distance.toFixed(2)} km</p>
+                    <button onclick="bookRoom(${room.hotelId}, ${room.roomNumber})">Book</button>
+                    <button onclick="leaveFeedback(${room.hotelId}, ${room.roomNumber})">Leave Feedback</button>
+                    <button onclick="viewFeedback(${room.hotelId}, ${room.roomNumber})">View Feedback</button>
+                    <hr>
+                `;
+                resultsDiv.appendChild(roomDiv);
+            });
+        }
+
+        function bookRoom(hotelId, roomNumber) {
+            fetch(`/hotels/${hotelId}/book/${roomNumber}`, {method: 'POST'})
+                .then(response => response.text())
+                .then(data => {
+                    alert(data);
+                    searchRooms(); // Refresh results
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function leaveFeedback(hotelId, roomNumber) {
+            const feedback = prompt("Enter your feedback:");
+            if (feedback) {
+                fetch(`/hotels/${hotelId}/feedback/${roomNumber}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams({'feedback': feedback})
+                })
+                    .then(response => response.text())
+                    .then(data => {
+                        alert(data);
+                        searchRooms(); // Refresh results
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        }
+
+        function viewFeedback(hotelId, roomNumber) {
+            fetch(`/hotels/${hotelId}/feedback/${roomNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    alert(`Feedback for room ${roomNumber}:\n` + data.join("\n"));
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(setPosition, showError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function setPosition(position) {
+            document.getElementById("latitude").value = position.coords.latitude;
+            document.getElementById("longitude").value = position.coords.longitude;
+        }
+
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("User denied the request for Geolocation.");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    alert("Location information is unavailable.");
+                    break;
+                case error.TIMEOUT:
+                    alert("The request to get user location timed out.");
+                    break;
+                case error.UNKNOWN_ERROR:
+                    alert("An unknown error occurred.");
+                    break;
+            }
+        }
+
+        window.onload = getLocation;
+    </script>
+</head>
+<body>
+<h1>Search for Available Rooms</h1>
+<form onsubmit="event.preventDefault(); searchRooms();">
+    <label for="roomType">Room Type:</label>
+    <input type="number" id="roomType" name="roomType" required><br><br>
+
+    <label for="minPrice">Min Price:</label>
+    <input type="number" id="minPrice" name="minPrice" required><br><br>
+
+    <label for="maxPrice">Max Price:</label>
+    <input type="number" id="maxPrice" name="maxPrice" required><br><br>
+
+    <label for="maxDistance">Max Distance (km):</label>
+    <input type="number" id="maxDistance" name="maxDistance" required><br><br>
+
+    <label for="latitude">Latitude:</label>
+    <input type="number" step="any" id="latitude" name="latitude" required readonly><br><br>
+
+    <label for="longitude">Longitude:</label>
+    <input type="number" step="any" id="longitude" name="longitude" required readonly><br><br>
+
+    <button type="submit">Search</button>
+</form>
+
+<h2>Available Rooms</h2>
+<div id="results"></div>
+</body>
+</html>

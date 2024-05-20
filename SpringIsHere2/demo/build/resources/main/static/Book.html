@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Book a Room</title>
+    <script>
+        function bookRoom() {
+            const hotelId = document.getElementById("hotelId").value;
+            const roomNumber = document.getElementById("roomNumber").value;
+
+            fetch(`/hotels/${hotelId}/book/${roomNumber}`, {
+                method: 'POST'
+            })
+                .then(response => response.text())
+                .then(data => {
+                    alert(data);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<body>
+<h1>Book a Room</h1>
+<label for="hotelId">Hotel ID:</label>
+<input type="text" id="hotelId" name="hotelId"><br><br>
+
+<label for="roomNumber">Room Number:</label>
+<input type="text" id="roomNumber" name="roomNumber"><br><br>
+
+<button onclick="bookRoom()">Book Room</button>
+</body>
+</html>
